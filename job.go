@@ -34,6 +34,20 @@ func NewJob(path string, id int) *Job {
 }
 
 func (job Job) start() {
+
 	job.status = RUNNING
 	job.cnt += 1;
+	job.execute()
+
 } 
+
+func (job Job) execute() {
+
+	
+	file, err := os.Open(job.path)
+	if err != nil {
+		fmt.Println("Job", job.id, job.path, ": Error", err)
+	}
+	defer file.Close()
+}
+
