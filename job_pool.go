@@ -26,7 +26,7 @@ func NewJob_pool(paths []string) *Job_pool {
 	job_pool.wg.Add(len(paths))
 	go func() {
 		for _ = range len(paths) {
-			go job_pool.start_newjob()
+			job_pool.start_newjob()
 		}
 	}()
 	return job_pool
@@ -45,7 +45,7 @@ func (job_pool *Job_pool) start_newjob() {
 		job.err = err
 		job_pool.job_failed.enqueue(job)
 	} else {
-		//fmt.Printf("Job %d success\n", job.id)
+		fmt.Printf("Job %d success\n", job.id)
 		job_pool.job_finished.enqueue(job)
 	}
 }
