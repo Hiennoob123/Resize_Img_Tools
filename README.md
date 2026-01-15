@@ -17,10 +17,13 @@ sudo ./install_tool.sh
 ```
 
 ## Usage
-- Operations: Resize Image to 720p or 1080p
-- Flags:
---r: Recursively walk through the source directory and maintain the same relative path for output
---res: Specify Resolution (p720p or p1080)
+**Operations**: Resize Image to 720p or 1080p
+
+**Flags**:
+
+*--r*: Recursively walk through the source directory and maintain the same relative path for output
+
+*--res*: Specify Resolution (p720p or p1080)
 
 - Examples command:
 
