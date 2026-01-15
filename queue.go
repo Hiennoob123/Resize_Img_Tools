@@ -86,7 +86,6 @@ func (q *Queue[T]) enqueue(item T) {
 		data: item,
 		top: rep,
 	}
-	_ = <- rep
 }
 
 func (q *Queue[T]) dequeue() (T, error) {
@@ -98,6 +97,7 @@ func (q *Queue[T]) dequeue() (T, error) {
 	}
 	
 	top := <- rep
+
 	return top.value, top.err
 }
 

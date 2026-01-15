@@ -3,6 +3,8 @@ package main
 import (
 	"os"
 	"github.com/davidbyttow/govips/v2/vips"
+	"fmt"
+	"path/filepath"
 )
 type RES int
 const (
@@ -24,6 +26,7 @@ type Job struct {
 	path string 
 	status STATUS 
 	cnt int
+	err error
 }
 
 func NewJob(path string, id int) *Job {
@@ -48,6 +51,7 @@ func (job  Job) run() error {
 
 func (job Job) start() {
 
+	fmt.Println("Job", job.id, "run")
 	job.status = RUNNING
 	job.cnt += 1;
 
@@ -95,8 +99,14 @@ func (job Job) execute() error {
 	if err != nil {
 		return err
 	}
+
+	dst := dst_path(job.path)
+	if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+		fmt.Println("Failed to create directory")
+		return err
+	}
 	
-	err = os.WriteFile(dst_path(job.path), buf, 0644)
+	err = os.WriteFile(dst, buf, 0644)
 
 	return err
 
