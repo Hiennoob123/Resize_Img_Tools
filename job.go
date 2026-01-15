@@ -1,11 +1,13 @@
 package main 
 
 import (
-	"fmt"
-	"github.com/nfnt/resize"
 	"os"
-	"image/jpeg"
-	"image"
+	"github.com/davidbyttow/govips/v2/vips"
+)
+type RES int
+const (
+	p720 RES = iota
+	p1080
 )
 
 type STATUS int
@@ -33,21 +35,70 @@ func NewJob(path string, id int) *Job {
 	return newjob
 }
 
+func (job  Job) run() error {
+	job.start()
+	err := job.execute()
+	if err == nil {
+		job.finish()
+	}	else {
+		job.failed()
+	}
+	return err
+}
+
 func (job Job) start() {
 
 	job.status = RUNNING
 	job.cnt += 1;
-	job.execute()
 
 } 
 
-func (job Job) execute() {
 
-	
-	file, err := os.Open(job.path)
-	if err != nil {
-		fmt.Println("Job", job.id, job.path, ": Error", err)
+func (job Job) finish() {
+	job.status = FINISHED
+}
+
+func (job Job) failed() {
+	job.status = FAILED
+}
+
+// Decode and resize the Image
+func (job Job) execute() error {
+	img, err := vips.NewImageFromFile(job.path)
+	if (err != nil) {
+		return err
 	}
-	defer file.Close()
+
+	// Use the copy to resize
+	imgcopy, err := img.Copy()
+	if err != nil {
+		return err
+	}
+
+
+
+	switch Res {
+	case p720:
+		err = imgcopy.Thumbnail(1280, 720, vips.InterestingCentre)
+		if err != nil {
+			return err
+		}
+	case p1080:
+		err = imgcopy.Thumbnail(1920, 1080, vips.InterestingCentre)
+		if err != nil {
+			return err
+		}
+	}
+
+	buf, _, err := imgcopy.Export(vips.NewDefaultJPEGExportParams())
+
+	if err != nil {
+		return err
+	}
+	
+	err = os.WriteFile(dst_path(job.path), buf, 0644)
+
+	return err
+
 }
 

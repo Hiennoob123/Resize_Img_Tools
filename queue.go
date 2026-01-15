@@ -1,56 +1,55 @@
 package main
 
-import "fmt"
+import "errors"
 
 type Query int 
 const (
 	Enqueue Query = iota
 	Dequeue
-	None
+	Length
 )
 
 // Request query for queue
 type Request[T any] struct {
 	query Query
 	data T
+	top chan TopStruct[T]
 }
 
 type TopStruct[T any] struct {
 	value T 
+	length int
 	err error
 }
 
 // Implementing safe multi-threads job queue
 type Queue[T any] struct {
 	items []T
-	request chan Request[T]
-	top chan TopStruct[T]
-	stop bool 
-	sz int
+	request chan *Request[T]
 }
 
 // Initialize newQueue with multi-threads Enqueue and Dequeue handler
-func newQueue[T any](items []T) *Queue {
+func newQueue[T any](items []T) *Queue[T] {
 	queue := new(Queue[T])
 	queue.items = items
-	queue.request = make(chan Request)
-	queue.top = make(chan TopStruct[T])
-	queue.stop = true
-	queue.sz = len(items)
+	queue.request = make(chan *Request[T])
 	go func() {
-		for !queue.stop {
-			request := <- queue.request
-			switch request.query {
-			case None:
+		for {
+			request, more := <- queue.request
+			if !more {
 				break
+			}
+			switch request.query {
 			case Enqueue:
 				queue.items = append(queue.items, request.data)
 			case Dequeue:
 				if len(queue.items) == 0 {
-					queue.top <- TopStruct{
-						value: new(T),
-						err: nil,
+					request.top <- TopStruct[T]{
+						value: *new(T),
+						length: 0,
+						err: errors.New("Queue is empty"),
 					}
+					continue
 				}
 				top_item := queue.items[0]
 				if len(queue.items) == 1 {
@@ -58,8 +57,15 @@ func newQueue[T any](items []T) *Queue {
 				} else {
 					queue.items = queue.items[1:]
 				}
-				queue.top <- TopStruct{
+				request.top <- TopStruct[T]{
 					value: top_item,
+					length: len(queue.items),
+					err: nil,
+				}
+			case Length:
+				request.top <- TopStruct[T]{
+					value: *new(T),
+					length: len(queue.items),
 					err: nil,
 				}
 			}
@@ -69,34 +75,40 @@ func newQueue[T any](items []T) *Queue {
 }
 
 func (q *Queue[T]) stop_queue() {
-	q.stop = true
-	q.request <- Request {
-		query: None,
-		data: new(T),
-	}
+	close(q.request)
 }
 
 
 func (q *Queue[T]) enqueue(item T) {
-	q.sz += 1
-	q.request <- Request{
+	rep := make(chan TopStruct[T])
+	q.request <- &Request[T]{
 		query: Enqueue,
 		data: item,
+		top: rep,
 	}
+	_ = <- rep
 }
 
-func (q *Queue[T]) dequeue() T {
-	q.sz -= 1
-	q.request <- Request{
+func (q *Queue[T]) dequeue() (T, error) {
+	rep := make(chan TopStruct[T])
+	q.request <- &Request[T]{
 		query: Dequeue,
-		data: new(T),
+		data: *new(T),
+		top: rep, 
 	}
 	
-	top := <- q.top
-
-	if top.err != nil {
-		fmt.Println("Queue Access Error:", top.err)
-	}
-
-	return top.value
+	top := <- rep
+	return top.value, top.err
 }
+
+func (q *Queue[T]) length() int {
+	rep := make(chan TopStruct[T])
+	q.request <- &Request[T]{
+		query: Length,
+		data: *new(T),
+		top: rep,
+	}
+	sz := <- rep
+	return sz.length
+}
+

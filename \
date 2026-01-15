@@ -1,0 +1,59 @@
+package main 
+
+import (
+	"fmt"
+	"os"
+	"image"
+	"image/jpeg"
+)
+
+type STATUS int
+
+const (
+	PENDING STATUS = iota
+	RUNNING
+	FINISHED
+	FAILED
+)
+
+type Job struct {
+	id int 
+	path string 
+	status STATUS 
+	cnt int
+}
+
+func NewJob(path string, id int) *Job {
+	newjob := new(Job)
+	newjob.path = path
+	newjob.id = id 
+	newjob.status = PENDING
+	newjob.cnt = 0
+	return newjob
+}
+
+func (job Job) start() {
+
+	job.status = RUNNING
+	job.cnt += 1;
+	job.execute()
+
+} 
+
+func (job Job) execute() {
+
+	
+}
+
+func decodeJPGfile(filepath string) (image.Image, error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to open the JPG file", filepath)
+	}
+
+	img, format, err := image.Decode(file)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to decode the JPG file", filepath, error)
+	}
+}
+
