@@ -32,9 +32,7 @@ go run . --res 1080p --r <src_dir> <dst_dir>
 
 
 
-## License
-MIT
-
+## Credit
 This project uses govips (MIT License):
 https://github.com/davidbyttow/govips
 
